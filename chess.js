@@ -24,6 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  *----------------------------------------------------------------------------*/
+console.log("CUSTOM CHESS.JS !!!");
 
 var Chess = function(fen) {
   var BLACK = 'b'
@@ -160,6 +161,9 @@ var Chess = function(fen) {
   var history = []
   var header = {}
   var comments = {}
+
+  
+  var invinciblePieces = [];
 
   /* if the user passes in a fen string, load it, else default to
    * starting position
@@ -661,6 +665,9 @@ var Chess = function(fen) {
       return moves
     }
 
+    /* filter out invincibles pieces */
+    moves = moves.filter(m => !invinciblePieces.map(p => SQUARES[p]).includes(m.to));
+
     /* filter out illegal moves */
     var legal_moves = []
     for (var i = 0, len = moves.length; i < len; i++) {
@@ -898,6 +905,14 @@ var Chess = function(fen) {
 
     board[move.to] = board[move.from]
     board[move.from] = null
+    
+    /* move invincible piece */
+    if(invinciblePieces.includes(algebraic(move.from))){
+      console.log("Moving invincible piece");
+      console.log(move);
+      invinciblePieces = invinciblePieces.filter(p => p !== algebraic(move.from));
+      invinciblePieces.push(algebraic(move.to));
+    }
 
     /* if ep capture, remove the captured pawn */
     if (move.flags & BITS.EP_CAPTURE) {
@@ -1006,6 +1021,15 @@ var Chess = function(fen) {
     board[move.from] = board[move.to]
     board[move.from].type = move.piece // to undo any promotions
     board[move.to] = null
+
+    /* move back invincible piece */
+    if(invinciblePieces.includes(algebraic(move.to))){
+      console.log("Moving back invincible piece");
+      console.log(move);
+
+      invinciblePieces = invinciblePieces.filter(p => p !== algebraic(move.to));
+      invinciblePieces.push(algebraic(move.from));
+    }
 
     if (move.flags & BITS.CAPTURE) {
       board[move.to] = { type: move.captured, color: them }
@@ -1278,6 +1302,8 @@ var Chess = function(fen) {
       return keys
     })(),
     FLAGS: FLAGS,
+    getInvinciblePieces: () => invinciblePieces,
+    setInvinciblePiece: (piece) => { invinciblePieces.push(piece); },
 
     /***************************************************************************
      * PUBLIC API
